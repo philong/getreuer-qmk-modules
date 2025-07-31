@@ -118,6 +118,10 @@ static uint8_t unpack_mods(uint16_t keycode) {
   return (mods5 & 0x10) != 0 ? (mods5 << 4) : mods5;
 }
 
+__attribute__((weak)) bool is_speculative_hold_allowed(uint16_t keycode) {
+  return (unpack_mods(keycode) & (MOD_LSFT | MOD_LCTL)) != 0;
+}
+
 // This hook is called for every key event, *before* QMK core processes it.
 bool pre_process_record_speculative_hold(uint16_t keycode,
                                          keyrecord_t* record) {
@@ -134,7 +138,7 @@ bool pre_process_record_speculative_hold(uint16_t keycode,
     if (!settle_timer || term > TIMER_DIFF_16(settle_timer, now)) {
       settle_timer = (now + term) | 1;
     }
-  } else if (!is_combo_key(keycode)) {
+  } else if (is_speculative_hold_allowed(keycode) || !is_combo_key(keycode)) {
     // Otherwise if this is an MT key and not part of a combo...
     const keypos_t key = record->event.key;
     const uint8_t mods = unpack_mods(keycode);
